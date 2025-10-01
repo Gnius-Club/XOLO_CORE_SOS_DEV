@@ -9,7 +9,7 @@
   <meta http-equiv="Expires" content="0" />
   <!-- FIN: INSTRUCCIONES ANTI-CACHÉ -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Xolo AI • MODO DEBUG</title>
+  <title>Xolo AI • Interfaz Educativa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -43,7 +43,6 @@
 
     [hidden] { display: none !important; }
 
-    /* --- NUEVO: LAYOUT PARA DEBUG --- */
     .body-wrapper {
       display: flex;
       width: 100%;
@@ -58,6 +57,7 @@
       min-width: 400px;
     }
 
+    /* --- INICIO: CAMBIOS PARA CONSOLA OCULTA --- */
     #debug-console-wrapper {
         width: 450px;
         flex-shrink: 0;
@@ -67,7 +67,31 @@
         display: flex;
         flex-direction: column;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        display: none; /* OCULTA POR DEFECTO */
     }
+    .body-wrapper.debug-active #debug-console-wrapper {
+        display: flex; /* MUESTRA CUANDO LA CLASE ESTÁ PRESENTE */
+    }
+    #secret-debug-toggle {
+        position: fixed;
+        bottom: 5px;
+        right: 5px;
+        width: 10px;
+        height: 10px;
+        background: transparent;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        z-index: 9999;
+        opacity: 0.1;
+        transition: opacity 0.2s;
+    }
+    #secret-debug-toggle:hover {
+        opacity: 0.5;
+        background-color: white; /* Se hace visible al pasar el mouse */
+    }
+    /* --- FIN: CAMBIOS PARA CONSOLA OCULTA --- */
+
     .debug-header {
         padding: 12px 16px;
         background: var(--bg-panel);
@@ -220,7 +244,7 @@
     /* --- ESTILOS RESPONSIVOS --- */
     @media (max-width: 1024px) {
       .body-wrapper { flex-direction: column; }
-      #debug-console-wrapper { width: 100%; height: 300px; border-left: none; border-top: 2px solid var(--bg-panel-secondary); }
+      .body-wrapper.debug-active #debug-console-wrapper { width: 100%; height: 300px; border-left: none; border-top: 2px solid var(--bg-panel-secondary); }
       .main-container { padding: 0; }
        .app { max-height: 100%; border-radius: 0; }
        .app::before { border-radius: 0; }
@@ -319,6 +343,10 @@
     </div>
   </div>
 
+  <!-- INICIO: BOTÓN SECRETO PARA ACTIVAR DEBUG -->
+  <button id="secret-debug-toggle" title="Debug Toggle"></button>
+  <!-- FIN: BOTÓN SECRETO -->
+
   <script>
     /* ========================================================
      * 🔧 MODO DEBUG: CONSOLA Y LOGGING
@@ -341,7 +369,6 @@
         debugLogEl.appendChild(entry);
         debugLogEl.scrollTop = debugLogEl.scrollHeight;
 
-        // También envía a la consola del navegador para mayor conveniencia
         const consoleArgs = [`[XOLO DEBUG] ${level} - ${title}`, data || ''];
         switch(level) {
             case 'ERROR': console.error(...consoleArgs); break;
@@ -355,7 +382,6 @@
         debugLog('INFO', 'Consola Limpiada', new Date().toLocaleTimeString());
     });
     
-    // Safety nets para errores no capturados
     window.addEventListener('error', (event) => {
         debugLog('ERROR', 'Error Global No Capturado', {
             message: event.message,
@@ -430,6 +456,28 @@
       root.style.setProperty('--gradient-end-color', UI_CONFIG.GRADIENT_COLOR_2);
       root.style.setProperty('--gradient-start-rgb', hexToRgb(UI_CONFIG.GRADIENT_COLOR_1));
       root.style.setProperty('--gradient-end-rgb', hexToRgb(UI_CONFIG.GRADIENT_COLOR_2));
+      
+      // --- INICIO: LÓGICA DEL BOTÓN SECRETO ---
+      const bodyWrapper = document.querySelector('.body-wrapper');
+      const secretBtn = document.getElementById('secret-debug-toggle');
+      let secretClickCount = 0;
+      let secretClickTimer = null;
+      secretBtn.addEventListener('click', () => {
+          secretClickCount++;
+          clearTimeout(secretClickTimer); // Reinicia el timer con cada click
+          if (secretClickCount >= 3) {
+              bodyWrapper.classList.toggle('debug-active');
+              debugLog('INFO', `Modo Debug ${bodyWrapper.classList.contains('debug-active') ? 'ACTIVADO' : 'DESACTIVADO'}`);
+              secretClickCount = 0; // Resetea el contador
+          } else {
+              // Si no se llega a 3 clicks en 1.5 segundos, se resetea.
+              secretClickTimer = setTimeout(() => {
+                  secretClickCount = 0;
+              }, 1500);
+          }
+      });
+      // --- FIN: LÓGICA DEL BOTÓN SECRETO ---
+      
       loginBtn.addEventListener("click", handleLogin);
       usernameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") handleLogin(); });
       sendBtn.addEventListener("click", onSend);
